@@ -2,7 +2,7 @@
 Homework Assignment (Image Classification)
 
 
-To run this code: 
+To run this code from the image_classifier folder: 
 
 1- npm install -g browser-sync
 
