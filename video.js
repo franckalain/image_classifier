@@ -1,26 +1,46 @@
-let classifier; 
-let video; 
-let resultsP;
+const webcamElement = document.getElementById('webcam');
 
-function setup() {
-  noCanvas();
-  // Create a camera input
-  video = createCapture(VIDEO);
-  // Initialize the Image Classifier method with MobileNet and the video as the second argument
-  classifier = ml5.imageClassifier('MobileNet', video, modelReady);
-  resultsP = createP('Loading model and video...');
-}
-function modelReady() {
-  console.log('Model Ready');
-  classifyVideo();
-}
-// Get a prediction for the current video frame
-function classifyVideo() {
-  classifier.classify(gotResult);
-}
-// When we get a result
-function gotResult(err, results) {
-  // The results are in an array ordered by confidence.
-  resultsP.html(results[0].label + ' ' + nf(results[0].confidence, 0, 2));
-  classifyVideo();
-}
+let net;
+
+async function setupWebcam() {
+    return new Promise((resolve, reject) => {
+      const navigatorAny = navigator;
+      navigator.getUserMedia = navigator.getUserMedia ||
+          navigatorAny.webkitGetUserMedia || navigatorAny.mozGetUserMedia ||
+          navigatorAny.msGetUserMedia;
+      if (navigator.getUserMedia) {
+        navigator.getUserMedia({video: true},
+          stream => {
+            webcamElement.srcObject = stream;
+            webcamElement.addEventListener('loadeddata',  () => resolve(), false);
+          },
+          error => reject());
+      } else {
+        reject();
+      }
+    });
+  }
+
+  async function app() {
+    console.log('Loading mobilenet..');
+  
+    // Load the model.
+    net = await mobilenet.load();
+    console.log('Sucessfully loaded model');
+    
+    await setupWebcam();
+    while (true) {
+      const result = await net.classify(webcamElement);
+  
+      document.getElementById('console').innerText = `
+        prediction: ${result[0].className}\n
+        probability: ${result[0].probability}
+      `;
+  
+      // Give some breathing room by waiting for the next animation frame to
+      // fire.
+      await tf.nextFrame();
+    }
+  }
+
+app();
